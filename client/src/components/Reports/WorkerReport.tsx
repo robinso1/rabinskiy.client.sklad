@@ -1,0 +1,1 @@
+// WorkerReport component
