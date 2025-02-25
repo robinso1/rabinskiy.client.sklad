@@ -49,15 +49,34 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
+// Обработка всех остальных маршрутов (для SPA)
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
+});
+
+// Запуск сервера до подключения к MongoDB, чтобы Render мог обнаружить открытый порт
+const server = app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
+});
+
 // Подключение к MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/rabinskiy-sklad')
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/rabinskiy-sklad';
+console.log('Connecting to MongoDB at:', MONGODB_URI.replace(/:([^:@]+)@/, ':****@')); // Логируем URI без пароля
+
+mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log('Connected to MongoDB');
-    // Запуск сервера
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-    });
   })
   .catch(err => {
     console.error('Error connecting to MongoDB:', err.message);
+    // Не завершаем процесс, чтобы сервер продолжал работать даже без БД
+    console.log('Server will continue running without database connection');
   });
+
+// Обработка сигналов завершения
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('Process terminated');
+  });
+});

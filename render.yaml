@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: rabinskiy-sklad-server
+    env: node
+    buildCommand: npm install && cd server && npm install && npm run build
+    startCommand: cd server && node dist/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_URI
+        sync: false # Это значение должно быть установлено в панели управления Render
+      - key: JWT_SECRET
+        generateValue: true # Автоматически генерирует секретный ключ
+      - key: JWT_EXPIRES_IN
+        value: 24
+      - key: MOYSKLAD_LOGIN
+        sync: false # Установите в панели управления Render
+      - key: MOYSKLAD_PASSWORD
+        sync: false # Установите в панели управления Render
+      - key: MOYSKLAD_API_URL
+        value: https://api.moysklad.ru/api/remap/1.2
+    autoDeploy: true
+    disk:
+      name: data
+      mountPath: /app/server/data
+      sizeGB: 1 
