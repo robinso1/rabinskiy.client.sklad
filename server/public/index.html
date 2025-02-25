@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Склад</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 30px;
+        }
+        header h1 {
+            margin: 0;
+            padding: 0 20px;
+        }
+        .card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+        .card-header {
+            background-color: #3498db;
+            color: white;
+            padding: 15px 20px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .card-body {
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .result {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            margin-top: 15px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .hidden {
+            display: none;
+        }
+        .success {
+            color: #27ae60;
+        }
+        .error {
+            color: #e74c3c;
+        }
+        .token-display {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Склад</h1>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Авторизация -->
+        <div class="card" id="auth-section">
+            <div class="card-header">Авторизация</div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="username">Имя пользователя:</label>
+                    <input type="text" id="username" value="admin">
+                </div>
+                <div class="form-group">
+                    <label for="password">Пароль:</label>
+                    <input type="password" id="password" value="password">
+                </div>
+                <button id="login-btn">Войти</button>
+                <div id="auth-result" class="result hidden"></div>
+                <div id="token-display" class="token-display hidden">
+                    <strong>Статус:</strong> <span id="auth-status">Не авторизован</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- МойСклад -->
+        <div class="card" id="moysklad-section">
+            <div class="card-header">МойСклад</div>
+            <div class="card-body">
+                <div class="button-group">
+                    <button id="check-connection-btn">Проверить соединение</button>
+                    <button id="get-products-btn">Получить товары</button>
+                    <button id="sync-stock-btn">Синхронизировать остатки</button>
+                </div>
+                <div id="moysklad-result" class="result hidden"></div>
+            </div>
+        </div>
+
+        <!-- Заказы -->
+        <div class="card" id="orders-section">
+            <div class="card-header">Заказы</div>
+            <div class="card-body">
+                <div class="button-group">
+                    <button id="get-orders-btn">Получить список заказов</button>
+                    <button id="get-order-btn">Получить заказ по ID</button>
+                </div>
+                <div class="form-group hidden" id="order-id-group">
+                    <label for="order-id">ID заказа:</label>
+                    <input type="text" id="order-id" value="1">
+                    <button id="submit-order-id-btn">Получить</button>
+                </div>
+                <div id="orders-result" class="result hidden"></div>
+            </div>
+        </div>
+
+        <!-- Материалы -->
+        <div class="card" id="materials-section">
+            <div class="card-header">Материалы</div>
+            <div class="card-body">
+                <div class="button-group">
+                    <button id="get-materials-btn">Получить список материалов</button>
+                    <button id="get-material-btn">Получить материал по ID</button>
+                </div>
+                <div class="form-group hidden" id="material-id-group">
+                    <label for="material-id">ID материала:</label>
+                    <input type="text" id="material-id" value="1">
+                    <button id="submit-material-id-btn">Получить</button>
+                </div>
+                <div id="materials-result" class="result hidden"></div>
+            </div>
+        </div>
+
+        <!-- Технологические процессы -->
+        <div class="card" id="tech-processes-section">
+            <div class="card-header">Технологические процессы</div>
+            <div class="card-body">
+                <div class="button-group">
+                    <button id="get-tech-processes-btn">Получить список техпроцессов</button>
+                    <button id="get-tech-process-btn">Получить техпроцесс по ID</button>
+                </div>
+                <div class="form-group hidden" id="tech-process-id-group">
+                    <label for="tech-process-id">ID техпроцесса:</label>
+                    <input type="text" id="tech-process-id" value="1">
+                    <button id="submit-tech-process-id-btn">Получить</button>
+                </div>
+                <div id="tech-processes-result" class="result hidden"></div>
+            </div>
+        </div>
+
+        <!-- Операции -->
+        <div class="card" id="operations-section">
+            <div class="card-header">Операции</div>
+            <div class="card-body">
+                <div class="button-group">
+                    <button id="get-operations-btn">Получить список операций</button>
+                    <button id="get-operation-btn">Получить операцию по ID</button>
+                </div>
+                <div class="form-group hidden" id="operation-id-group">
+                    <label for="operation-id">ID операции:</label>
+                    <input type="text" id="operation-id" value="1">
+                    <button id="submit-operation-id-btn">Получить</button>
+                </div>
+                <div id="operations-result" class="result hidden"></div>
+            </div>
+        </div>
+
+        <!-- Учет рабочего времени -->
+        <div class="card" id="work-time-section">
+            <div class="card-header">Учет рабочего времени</div>
+            <div class="card-body">
+                <div class="button-group">
+                    <button id="get-work-time-btn">Получить записи учета времени</button>
+                </div>
+                <div id="work-time-result" class="result hidden"></div>
+            </div>
+        </div>
+
+        <!-- Отчеты -->
+        <div class="card" id="reports-section">
+            <div class="card-header">Отчеты</div>
+            <div class="card-body">
+                <div class="button-group">
+                    <button id="get-order-report-btn">Отчет по заказу</button>
+                    <button id="get-materials-report-btn">Отчет по материалам</button>
+                    <button id="get-work-time-report-btn">Отчет по рабочему времени</button>
+                </div>
+                <div class="form-group hidden" id="report-order-id-group">
+                    <label for="report-order-id">ID заказа:</label>
+                    <input type="text" id="report-order-id" value="1">
+                    <button id="submit-report-order-id-btn">Получить отчет</button>
+                </div>
+                <div id="reports-result" class="result hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Глобальные переменные
+        let authToken = '';
+        let currentUser = null;
+
+        // Словарь для перевода ключей JSON на русский язык
+        const translations = {
+            // Общие поля
+            'id': 'ID',
+            'name': 'Название',
+            'description': 'Описание',
+            'date': 'Дата',
+            'status': 'Статус',
+            'comments': 'Комментарии',
+            
+            // Пользователи
+            'username': 'Имя пользователя',
+            'fullName': 'Полное имя',
+            'role': 'Роль',
+            'hourlyRate': 'Почасовая ставка',
+            
+            // Материалы
+            'code': 'Код',
+            'unit': 'Единица измерения',
+            'price': 'Цена',
+            'inStock': 'На складе',
+            'quantity': 'Количество',
+            
+            // Операции
+            'defaultRate': 'Стандартная ставка',
+            
+            // Заказы
+            'orderNumber': 'Номер заказа',
+            'articleNumber': 'Артикул',
+            'startDate': 'Дата начала',
+            'endDate': 'Дата окончания',
+            
+            // Учет рабочего времени
+            'user': 'Пользователь',
+            'userId': 'ID пользователя',
+            'order': 'Заказ',
+            'orderId': 'ID заказа',
+            'hours': 'Часы',
+            'approved': 'Утверждено',
+            'approvedBy': 'Утверждено кем',
+            'approvedAt': 'Утверждено когда',
+            
+            // Дополнительные поля
+            'completedQuantity': 'Выполнено',
+            'rate': 'Ставка',
+            'assignedTo': 'Назначено',
+            'completionDate': 'Дата выполнения',
+            'totalAmount': 'Общая сумма',
+            'customer': 'Заказчик',
+            'totalMaterialsCost': 'Стоимость материалов',
+            'totalWorkCost': 'Стоимость работ',
+            'totalCost': 'Общая стоимость',
+            'active': 'Активно',
+            'email': 'Email',
+            'phone': 'Телефон'
+        };
+        
+        // Функция для перевода ключа
+        function translateKey(key) {
+            return translations[key] || key;
+        }
+
+        // Функция для выполнения API-запросов
+        async function fetchAPI(url, method = 'GET', body = null) {
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            
+            if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+            
+            const options = {
+                method,
+                headers
+            };
+            
+            if (body) {
+                options.body = JSON.stringify(body);
+            }
+            
+            try {
+                const response = await fetch(url, options);
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('API Error:', error);
+                return {
+                    success: false,
+                    message: 'Ошибка при выполнении запроса',
+                    errors: [error.message]
+                };
+            }
+        }
+
+        // Функция для отображения результатов
+        function displayResult(elementId, data, asTable = false) {
+            const element = document.getElementById(elementId);
+            element.classList.remove('hidden');
+            
+            if (data.success) {
+                element.classList.add('success');
+                element.classList.remove('error');
+            } else {
+                element.classList.add('error');
+                element.classList.remove('success');
+            }
+            
+            if (asTable && data.data && Array.isArray(data.data) && data.data.length > 0) {
+                // Создаем таблицу для отображения данных
+                const keys = Object.keys(data.data[0]);
+                let tableHTML = `<h3>${data.message || 'Результат'}</h3>
+                                <table>
+                                    <thead>
+                                        <tr>`;
+                
+                // Заголовки таблицы с переводом на русский
+                keys.forEach(key => {
+                    if (typeof data.data[0][key] !== 'object') {
+                        tableHTML += `<th>${translateKey(key)}</th>`;
+                    }
+                });
+                
+                tableHTML += `</tr>
+                            </thead>
+                            <tbody>`;
+                
+                // Строки таблицы
+                data.data.forEach(item => {
+                    tableHTML += `<tr>`;
+                    keys.forEach(key => {
+                        if (typeof item[key] !== 'object') {
+                            tableHTML += `<td>${item[key]}</td>`;
+                        }
+                    });
+                    tableHTML += `</tr>`;
+                });
+                
+                tableHTML += `</tbody>
+                            </table>`;
+                
+                element.innerHTML = tableHTML;
+            } else {
+                // Обычное отображение JSON
+                element.innerHTML = `<h3>${data.message || 'Результат'}</h3>
+                                    <pre>${JSON.stringify(data, null, 2)}</pre>`;
+            }
+        }
+
+        // Обработчики событий
+        document.addEventListener('DOMContentLoaded', function() {
+            // Авторизация
+            document.getElementById('login-btn').addEventListener('click', async function() {
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                
+                const data = await fetchAPI('/api/auth/login', 'POST', { username, password });
+                
+                if (data.success) {
+                    authToken = data.data.token;
+                    currentUser = data.data.user;
+                    document.getElementById('auth-status').textContent = `Авторизован как ${currentUser.fullName} (${currentUser.role})`;
+                    document.getElementById('token-display').classList.remove('hidden');
+                }
+                
+                displayResult('auth-result', data);
+            });
+            
+            // МойСклад
+            document.getElementById('check-connection-btn').addEventListener('click', async function() {
+                const data = await fetchAPI('/api/moysklad/check-connection');
+                displayResult('moysklad-result', data);
+            });
+            
+            document.getElementById('get-products-btn').addEventListener('click', async function() {
+                const data = await fetchAPI('/api/moysklad/products');
+                displayResult('moysklad-result', data);
+            });
+            
+            document.getElementById('sync-stock-btn').addEventListener('click', async function() {
+                const data = await fetchAPI('/api/moysklad/sync/stock');
+                displayResult('moysklad-result', data);
+            });
+            
+            // Заказы
+            document.getElementById('get-orders-btn').addEventListener('click', async function() {
+                const data = await fetchAPI('/api/orders');
+                displayResult('orders-result', data, true);
+            });
+            
+            document.getElementById('get-order-btn').addEventListener('click', function() {
+                document.getElementById('order-id-group').classList.remove('hidden');
+            });
+            
+            document.getElementById('submit-order-id-btn').addEventListener('click', async function() {
+                const orderId = document.getElementById('order-id').value;
+                const data = await fetchAPI(`/api/orders/${orderId}`);
+                displayResult('orders-result', data);
+            });
+            
+            // Материалы
+            document.getElementById('get-materials-btn').addEventListener('click', async function() {
+                const data = await fetchAPI('/api/materials');
+                displayResult('materials-result', data, true);
+            });
+            
+            document.getElementById('get-material-btn').addEventListener('click', function() {
+                document.getElementById('material-id-group').classList.remove('hidden');
+            });
+            
+            document.getElementById('submit-material-id-btn').addEventListener('click', async function() {
+                const materialId = document.getElementById('material-id').value;
+                const data = await fetchAPI(`/api/materials/${materialId}`);
+                displayResult('materials-result', data);
+            });
+            
+            // Технологические процессы
+            document.getElementById('get-tech-processes-btn').addEventListener('click', async function() {
+                const data = await fetchAPI('/api/tech-processes');
+                displayResult('tech-processes-result', data, true);
+            });
+            
+            document.getElementById('get-tech-process-btn').addEventListener('click', function() {
+                document.getElementById('tech-process-id-group').classList.remove('hidden');
+            });
+            
+            document.getElementById('submit-tech-process-id-btn').addEventListener('click', async function() {
+                const techProcessId = document.getElementById('tech-process-id').value;
+                const data = await fetchAPI(`/api/tech-processes/${techProcessId}`);
+                displayResult('tech-processes-result', data);
+            });
+            
+            // Операции
+            document.getElementById('get-operations-btn').addEventListener('click', async function() {
+                const data = await fetchAPI('/api/operations');
+                displayResult('operations-result', data, true);
+            });
+            
+            document.getElementById('get-operation-btn').addEventListener('click', function() {
+                document.getElementById('operation-id-group').classList.remove('hidden');
+            });
+            
+            document.getElementById('submit-operation-id-btn').addEventListener('click', async function() {
+                const operationId = document.getElementById('operation-id').value;
+                const data = await fetchAPI(`/api/operations/${operationId}`);
+                displayResult('operations-result', data);
+            });
+            
+            // Учет рабочего времени
+            document.getElementById('get-work-time-btn').addEventListener('click', async function() {
+                const data = await fetchAPI('/api/work-time');
+                displayResult('work-time-result', data, true);
+            });
+            
+            // Отчеты
+            document.getElementById('get-order-report-btn').addEventListener('click', function() {
+                document.getElementById('report-order-id-group').classList.remove('hidden');
+            });
+            
+            document.getElementById('submit-report-order-id-btn').addEventListener('click', async function() {
+                const orderId = document.getElementById('report-order-id').value;
+                const data = await fetchAPI(`/api/reports/orders/${orderId}`);
+                displayResult('reports-result', data);
+            });
+            
+            document.getElementById('get-materials-report-btn').addEventListener('click', async function() {
+                const data = await fetchAPI('/api/reports/materials');
+                displayResult('reports-result', data);
+            });
+            
+            document.getElementById('get-work-time-report-btn').addEventListener('click', async function() {
+                const data = await fetchAPI('/api/reports/work-time');
+                displayResult('reports-result', data);
+            });
+        });
+    </script>
+</body>
+</html> 

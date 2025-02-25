@@ -60,4 +60,4 @@ export const getUserFromToken = (): any => {
     console.error('Error decoding token:', error);
     return null;
   }
-};
+}; 
