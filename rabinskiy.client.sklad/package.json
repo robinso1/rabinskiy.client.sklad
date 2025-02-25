@@ -1,0 +1,17 @@
+{
+  "name": "rabinskiy-sklad",
+  "version": "1.0.0",
+  "description": "Система учета для склада",
+  "main": "index.js",
+  "scripts": {
+    "start": "cd server && npm start",
+    "dev": "cd server && npm run dev",
+    "build": "cd server && npm run build",
+    "init-db": "cd server && npm run init-db"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  }
+} 
