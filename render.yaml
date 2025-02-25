@@ -10,20 +10,49 @@ services:
         value: production
       - key: PORT
         value: 10000
-      - key: MONGODB_URI
-        sync: false # Это значение должно быть установлено в панели управления Render
       - key: JWT_SECRET
-        generateValue: true # Автоматически генерирует секретный ключ
+        generateValue: true
       - key: JWT_EXPIRES_IN
         value: 24
       - key: MOYSKLAD_LOGIN
-        sync: false # Установите в панели управления Render
+        value: demo
       - key: MOYSKLAD_PASSWORD
-        sync: false # Установите в панели управления Render
+        value: demo
       - key: MOYSKLAD_API_URL
         value: https://api.moysklad.ru/api/remap/1.2
+      - key: INIT_DB
+        value: false
     autoDeploy: true
     disk:
       name: data
       mountPath: /app/server/data
-      sizeGB: 1 
+      sizeGB: 1
+    plan: free
+    
+  - type: redis
+    name: rabinskiy-sklad-redis
+    ipAllowList: []
+    plan: free
+
+  - type: pserv
+    name: rabinskiy-sklad-mongodb
+    env: docker
+    repo: https://github.com/render-examples/mongodb.git
+    envVars:
+      - key: MONGO_INITDB_ROOT_USERNAME
+        value: admin
+      - key: MONGO_INITDB_ROOT_PASSWORD
+        generateValue: true
+      - key: MONGO_REPLICA_SET_NAME
+        value: rs0
+    disk:
+      name: mongodb-data
+      mountPath: /data/db
+      sizeGB: 1
+    plan: free
+
+databases:
+  - name: rabinskiy-sklad-db
+    databaseName: rabinskiy-sklad
+    user: admin
+    plan: free 
