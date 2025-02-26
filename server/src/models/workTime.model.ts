@@ -1,59 +1,64 @@
 // WorkTime model
 
-import mongoose, { Schema, Document } from 'mongoose';
+import { Schema, model, Types } from 'mongoose';
 
-export interface IWorkTime extends Document {
-  userId: mongoose.Types.ObjectId; // ID пользователя
-  orderId: mongoose.Types.ObjectId; // ID заказа
-  operationId?: mongoose.Types.ObjectId; // ID операции (если применимо)
-  date: Date; // Дата выполнения работы
-  hours: number; // Количество часов
-  hourlyRate: number; // Почасовая ставка
-  quantity?: number; // Количество выполненных единиц (для сдельной оплаты)
-  rate?: number; // Ставка за единицу (для сдельной оплаты)
-  totalAmount: number; // Общая сумма
-  description?: string; // Описание выполненной работы
-  approved: boolean; // Статус утверждения
-  approvedBy?: mongoose.Types.ObjectId; // Кто утвердил
-  approvedAt?: Date; // Когда утверждено
-  comments?: string; // Комментарии
+export interface IWorkTime {
+  user: Types.ObjectId;
+  order?: Types.ObjectId;
+  date: Date;
+  hours: number;
+  hourlyRate: number;
+  description: string;
+  approved: boolean;
+  approvedBy?: Types.ObjectId;
+  approvedAt?: Date;
 }
 
-const WorkTimeSchema: Schema = new Schema({
-  userId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
-    required: true 
+const workTimeSchema = new Schema<IWorkTime>({
+  user: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
   },
-  orderId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Order', 
-    required: true 
+  order: {
+    type: Schema.Types.ObjectId,
+    ref: 'Order'
   },
-  operationId: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'Operation' 
+  date: {
+    type: Date,
+    required: true
   },
-  date: { type: Date, required: true, default: Date.now },
-  hours: { type: Number, default: 0 },
-  hourlyRate: { type: Number, default: 0 },
-  quantity: { type: Number },
-  rate: { type: Number },
-  totalAmount: { type: Number, required: true, default: 0 },
-  description: { type: String },
-  approved: { type: Boolean, default: false },
-  approvedBy: { 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User' 
+  hours: {
+    type: Number,
+    required: true,
+    min: 0
   },
-  approvedAt: { type: Date },
-  comments: { type: String }
-}, { timestamps: true });
+  hourlyRate: {
+    type: Number,
+    required: true,
+    min: 0
+  },
+  description: {
+    type: String,
+    required: true
+  },
+  approved: {
+    type: Boolean,
+    default: false
+  },
+  approvedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  approvedAt: Date
+}, {
+  timestamps: true
+});
 
 // Индексы для быстрого поиска
-WorkTimeSchema.index({ userId: 1 });
-WorkTimeSchema.index({ orderId: 1 });
-WorkTimeSchema.index({ date: 1 });
-WorkTimeSchema.index({ approved: 1 });
+workTimeSchema.index({ user: 1 });
+workTimeSchema.index({ order: 1 });
+workTimeSchema.index({ date: 1 });
+workTimeSchema.index({ approved: 1 });
 
-export default mongoose.model<IWorkTime>('WorkTime', WorkTimeSchema);
+export default model<IWorkTime>('WorkTime', workTimeSchema);
