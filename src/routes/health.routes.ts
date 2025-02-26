@@ -58,4 +58,13 @@ router.get('/db', (req: Request, res: Response) => {
   }
 });
 
+// Health check endpoint для Render.com
+router.get('/render', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    message: 'Server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
 export default router; 
