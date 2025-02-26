@@ -11,6 +11,9 @@ RUN npm install
 # Копируем исходный код
 COPY . .
 
+# Устанавливаем TypeScript глобально
+RUN npm install -g typescript
+
 # Собираем приложение
 RUN npm run build
 
