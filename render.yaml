@@ -1,9 +1,9 @@
 services:
   - type: web
     name: rabinskiy-sklad-server
-    env: node
-    buildCommand: npm install && cd server && npm install && npm run build
-    startCommand: cd server && node dist/index.js
+    env: docker
+    buildCommand: ""
+    startCommand: ""
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
@@ -21,7 +21,9 @@ services:
       - key: MOYSKLAD_API_URL
         value: https://api.moysklad.ru/api/remap/1.2
       - key: INIT_DB
-        value: false
+        value: true
+      - key: MONGODB_URI
+        value: mongodb://localhost:27017/rabinskiy-sklad
     autoDeploy: true
     disk:
       name: data

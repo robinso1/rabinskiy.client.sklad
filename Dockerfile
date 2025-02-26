@@ -5,19 +5,25 @@ WORKDIR /app
 # Копирование файлов проекта
 COPY . .
 
-# Установка зависимостей для клиента и сервера
+# Установка зависимостей для корневого проекта
 RUN npm install
-RUN cd server && npm install
 
-# Сборка клиента
+# Установка зависимостей и сборка клиента
+WORKDIR /app/client
+RUN npm install
 RUN npm run build
 
-# Сборка сервера
-RUN cd server && npm run build
+# Установка зависимостей и сборка сервера
+WORKDIR /app/server
+RUN npm install
+RUN npm run build
 
-# Создание директории для логов
+# Создание директорий для логов и данных
 RUN mkdir -p /app/server/logs
 RUN mkdir -p /app/server/data
+
+# Возврат в корневую директорию
+WORKDIR /app
 
 # Установка переменных окружения по умолчанию
 ENV PORT=10000

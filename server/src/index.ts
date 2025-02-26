@@ -90,7 +90,7 @@ const server = app.listen(PORT, () => {
       // Инициализация базы данных в production режиме, если задана переменная INIT_DB
       if (process.env.NODE_ENV === 'production' && process.env.INIT_DB === 'true') {
         try {
-          const initDb = require('./utils/initDb');
+          const initDb = require('./scripts/initDb');
           initDb().then(() => {
             console.log('Database initialized successfully');
           }).catch((err: Error) => {
