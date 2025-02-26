@@ -5,11 +5,14 @@ WORKDIR /app
 # Копируем файлы package.json и package-lock.json
 COPY package*.json ./
 
+# Копируем файлы package.json и package-lock.json сервера
+COPY server/package*.json ./
+
 # Устанавливаем зависимости
 RUN npm install
 
-# Копируем исходный код
-COPY . .
+# Копируем исходный код сервера
+COPY server/ ./
 
 # Устанавливаем TypeScript глобально
 RUN npm install -g typescript
