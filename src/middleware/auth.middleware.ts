@@ -2,16 +2,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-
-// Расширение интерфейса Request для добавления userId и userRole
-declare global {
-  namespace Express {
-    interface Request {
-      userId?: string;
-      userRole?: string;
-    }
-  }
-}
+import { Types } from 'mongoose';
 
 // Middleware для проверки авторизации
 export const auth = (req: Request, res: Response, next: NextFunction) => {
@@ -42,7 +33,7 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret') as any;
     
     // Добавление userId и userRole в объект запроса
-    req.userId = decoded.userId;
+    req.userId = new Types.ObjectId(decoded.userId);
     req.userRole = decoded.role;
     
     next();
