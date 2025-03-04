@@ -3,6 +3,12 @@
 import express from 'express';
 import { auth, adminOnly } from '../middleware/auth.middleware';
 
+// Функция для корректного сравнения идентификаторов (строка или ObjectId)
+function compareIds(id1: any, id2: any): boolean {
+  if (!id1 || !id2) return false;
+  return id1.toString() === id2.toString();
+}
+
 const router = express.Router();
 
 // Получить список заказов
@@ -193,6 +199,12 @@ router.post('/:id/operations/:operationId/assign', auth, adminOnly, (req, res) =
 
 // Завершить операцию
 router.post('/:id/operations/:operationId/complete', auth, (req, res) => {
+  // Здесь должна быть проверка, что операция назначена пользователю
+  // Пример:
+  // if (!compareIds(operation.assignedTo, req.userId)) {
+  //   return res.status(403).json({ message: 'Доступ запрещен' });
+  // }
+  
   res.json({
     success: true,
     message: `Complete operation ${req.params.operationId} endpoint`,
