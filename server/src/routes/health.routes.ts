@@ -1,16 +1,25 @@
 // Health check routes
 
-import express from 'express';
+import { Router, Request, Response } from 'express';
 import mongoose from 'mongoose';
 
-const router = express.Router();
+const router = Router();
+
+// Маппинг состояний подключения к MongoDB
+const dbStateMap: Record<number, string> = {
+  0: 'disconnected',
+  1: 'connected',
+  2: 'connecting',
+  3: 'disconnecting',
+  99: 'uninitialized'
+};
 
 /**
  * @route GET /api/health
  * @desc Проверка работоспособности сервера
  * @access Public
  */
-router.get('/', (req, res) => {
+router.get('/', (req: Request, res: Response) => {
   res.status(200).json({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -23,41 +32,42 @@ router.get('/', (req, res) => {
  * @desc Проверка подключения к базе данных
  * @access Public
  */
-router.get('/db', async (req, res) => {
+router.get('/db', (req: Request, res: Response) => {
   try {
-    // Проверяем состояние подключения к MongoDB
     const dbState = mongoose.connection.readyState;
-    const dbStateMap: Record<number, string> = {
-      0: 'disconnected',
-      1: 'connected',
-      2: 'connecting',
-      3: 'disconnecting',
-      99: 'uninitialized'
-    };
-    
-    if (dbState === 1) {
-      res.status(200).json({
-        status: 'ok',
-        database: dbStateMap[dbState] || 'unknown',
-        timestamp: new Date().toISOString()
-      });
-    } else {
-      res.status(503).json({
-        status: 'error',
-        database: dbStateMap[dbState] || 'unknown',
-        timestamp: new Date().toISOString(),
-        message: 'Database connection is not established'
-      });
-    }
+    res.status(200).json({
+      status: 'ok',
+      database: {
+        state: dbState,
+        stateText: dbStateMap[dbState] || 'unknown'
+      },
+      timestamp: new Date().toISOString()
+    });
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
     res.status(500).json({
       status: 'error',
-      timestamp: new Date().toISOString(),
-      message: 'Error checking database connection',
-      error: errorMessage
+      database: {
+        state: 99,
+        stateText: dbStateMap[99] || 'unknown',
+        error: errorMessage
+      },
+      timestamp: new Date().toISOString()
     });
   }
+});
+
+/**
+ * @route GET /api/health/env
+ * @desc Проверка переменных окружения
+ * @access Public
+ */
+router.get('/env', (req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'ok',
+    environment: process.env.NODE_ENV || 'development',
+    timestamp: new Date().toISOString()
+  });
 });
 
 export default router; 
