@@ -27,33 +27,35 @@ router.get('/db', async (req, res) => {
   try {
     // Проверяем состояние подключения к MongoDB
     const dbState = mongoose.connection.readyState;
-    const dbStateMap = {
+    const dbStateMap: Record<number, string> = {
       0: 'disconnected',
       1: 'connected',
       2: 'connecting',
-      3: 'disconnecting'
+      3: 'disconnecting',
+      99: 'uninitialized'
     };
     
     if (dbState === 1) {
       res.status(200).json({
         status: 'ok',
-        database: dbStateMap[dbState],
+        database: dbStateMap[dbState] || 'unknown',
         timestamp: new Date().toISOString()
       });
     } else {
       res.status(503).json({
         status: 'error',
-        database: dbStateMap[dbState],
+        database: dbStateMap[dbState] || 'unknown',
         timestamp: new Date().toISOString(),
         message: 'Database connection is not established'
       });
     }
-  } catch (error) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     res.status(500).json({
       status: 'error',
       timestamp: new Date().toISOString(),
       message: 'Error checking database connection',
-      error: error.message
+      error: errorMessage
     });
   }
 });

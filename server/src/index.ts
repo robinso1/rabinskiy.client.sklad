@@ -1,11 +1,10 @@
 // Server entry point
 
-import express from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
-import morgan from 'morgan';
 
 // Загрузка переменных окружения
 dotenv.config();
@@ -28,7 +27,6 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/rabins
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(morgan('dev'));
 
 // Статические файлы
 if (process.env.NODE_ENV === 'production') {
@@ -59,7 +57,7 @@ app.get('/', (req, res) => {
 });
 
 // Обработка ошибок
-app.use((err, req, res, next) => {
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error(err.stack);
   res.status(500).json({
     success: false,
@@ -69,7 +67,7 @@ app.use((err, req, res, next) => {
 });
 
 // Обработка несуществующих маршрутов
-app.use('*', (req, res) => {
+app.use('*', (req: Request, res: Response) => {
   res.status(404).json({
     success: false,
     message: 'Маршрут не найден'
