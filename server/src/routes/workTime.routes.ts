@@ -6,11 +6,6 @@ import WorkTime, { IWorkTime } from '../models/workTime.model';
 import User from '../models/user.model';
 import { auth, adminOnly } from '../middleware/auth.middleware';
 
-interface AuthRequest extends Request {
-  userId: string;
-  userRole: string;
-}
-
 const router = Router();
 
 // Получение записей учета рабочего времени с возможностью фильтрации
@@ -41,8 +36,8 @@ router.get('/', auth, async (req: Request, res: Response) => {
     }
 
     // Если пользователь не админ, показываем только его записи
-    if (req.userRole !== 'admin') {
-      filter.user = new Types.ObjectId(req.userId);
+    if ((req as any).userRole !== 'admin') {
+      filter.user = new Types.ObjectId((req as any).userId);
     }
 
     const workTimeRecords = await WorkTime.find(filter)
@@ -63,13 +58,13 @@ router.post('/', auth, async (req: Request, res: Response) => {
     const { order, date, hours, description } = req.body;
 
     // Получение пользователя для определения почасовой ставки
-    const user = await User.findById(req.userId);
+    const user = await User.findById((req as any).userId);
     if (!user) {
       return res.status(404).json({ message: 'Пользователь не найден' });
     }
 
     const workTime = new WorkTime({
-      user: new Types.ObjectId(req.userId),
+      user: new Types.ObjectId((req as any).userId),
       order: order ? new Types.ObjectId(order) : undefined,
       date,
       hours,
@@ -103,7 +98,7 @@ router.get('/:id', auth, async (req: Request, res: Response) => {
     }
 
     // Проверка прав доступа
-    if (req.userRole !== 'admin' && workTime.user.toString() !== req.userId) {
+    if ((req as any).userRole !== 'admin' && workTime.user.toString() !== (req as any).userId) {
       return res.status(403).json({ message: 'Доступ запрещен' });
     }
 
@@ -124,12 +119,12 @@ router.put('/:id', auth, async (req: Request, res: Response) => {
     }
 
     // Проверка прав: только владелец или админ может обновлять
-    if (req.userRole !== 'admin' && workTime.user.toString() !== req.userId) {
+    if ((req as any).userRole !== 'admin' && workTime.user.toString() !== (req as any).userId) {
       return res.status(403).json({ message: 'Доступ запрещен' });
     }
 
     // Если запись уже утверждена, только админ может её изменять
-    if (workTime.approved && req.userRole !== 'admin') {
+    if (workTime.approved && (req as any).userRole !== 'admin') {
       return res.status(403).json({ message: 'Нельзя изменять утвержденную запись' });
     }
 
@@ -165,12 +160,12 @@ router.delete('/:id', auth, async (req: Request, res: Response) => {
     }
 
     // Проверка прав: только владелец или админ может удалять
-    if (req.userRole !== 'admin' && workTime.user.toString() !== req.userId) {
+    if ((req as any).userRole !== 'admin' && workTime.user.toString() !== (req as any).userId) {
       return res.status(403).json({ message: 'Доступ запрещен' });
     }
 
     // Если запись уже утверждена, только админ может её удалять
-    if (workTime.approved && req.userRole !== 'admin') {
+    if (workTime.approved && (req as any).userRole !== 'admin') {
       return res.status(403).json({ message: 'Нельзя удалять утвержденную запись' });
     }
 
@@ -191,7 +186,7 @@ router.patch('/:id/approve', auth, adminOnly, async (req: Request, res: Response
     }
 
     workTime.approved = true;
-    workTime.approvedBy = new Types.ObjectId(req.userId);
+    workTime.approvedBy = new Types.ObjectId((req as any).userId);
     workTime.approvedAt = new Date();
 
     await workTime.save();
