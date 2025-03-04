@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rabinskiy-sklad-api
+    restart: unless-stopped
+    ports:
+      - "10000:10000"
+    environment:
+      - NODE_ENV=production
+      - PORT=10000
+      - JWT_SECRET=rabinskiy_sklad_secret_key_2023
+      - JWT_EXPIRES_IN=24
+      - MONGODB_URI=mongodb://mongo:27017/rabinskiy-sklad
+      - MOYSKLAD_LOGIN=demo
+      - MOYSKLAD_PASSWORD=demo
+      - MOYSKLAD_API_URL=https://api.moysklad.ru/api/remap/1.2
+      - INIT_DB=true
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    depends_on:
+      - mongo
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:10000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  mongo:
+    image: mongo:6
+    container_name: rabinskiy-sklad-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    command: mongod --quiet --logpath /dev/null
+
+volumes:
+  mongodb_data:
+    driver: local 
