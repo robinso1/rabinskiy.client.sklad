@@ -5,31 +5,30 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import morgan from 'morgan';
 
 // Загрузка переменных окружения
 dotenv.config();
 
 // Импорт маршрутов
 import authRoutes from './routes/auth.routes';
-// Временно закомментируем маршруты, которые вызывают ошибки
-// import userRoutes from './routes/user.routes';
-// import orderRoutes from './routes/order.routes';
-// import operationRoutes from './routes/operation.routes';
-// import materialRoutes from './routes/material.routes';
-// import techProcessRoutes from './routes/techProcess.routes';
-// import workTimeRoutes from './routes/workTime.routes';
-// import reportRoutes from './routes/report.routes';
-// import moyskladRoutes from './routes/moysklad.routes';
-// import healthRoutes from './routes/health.routes';
+import userRoutes from './routes/user.routes';
+import materialRoutes from './routes/material.routes';
+import operationRoutes from './routes/operation.routes';
+import orderRoutes from './routes/order.routes';
+import workTimeRoutes from './routes/workTime.routes';
+import moyskladRoutes from './routes/moysklad.routes';
+import healthRoutes from './routes/health.routes';
 
 // Создание экземпляра приложения Express
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/rabinskiy-sklad';
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(morgan('dev'));
 
 // Статические файлы
 if (process.env.NODE_ENV === 'production') {
@@ -41,54 +40,80 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Маршруты API
+app.use('/health', healthRoutes);
 app.use('/api/auth', authRoutes);
-// Временно закомментируем маршруты, которые вызывают ошибки
-// app.use('/api/users', userRoutes);
-// app.use('/api/orders', orderRoutes);
-// app.use('/api/operations', operationRoutes);
-// app.use('/api/materials', materialRoutes);
-// app.use('/api/tech-processes', techProcessRoutes);
-// app.use('/api/work-time', workTimeRoutes);
-// app.use('/api/reports', reportRoutes);
-// app.use('/api/moysklad', moyskladRoutes);
-// app.use('/api/health', healthRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/materials', materialRoutes);
+app.use('/api/operations', operationRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/worktime', workTimeRoutes);
+app.use('/api/moysklad', moyskladRoutes);
 
 // Простой маршрут для проверки работоспособности
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Server is running' });
+app.get('/', (req, res) => {
+  res.json({
+    message: 'API сервера Рабинский Склад работает',
+    version: '1.0.0',
+    documentation: '/api/docs'
+  });
 });
 
-// Подключение к MongoDB
+// Обработка ошибок
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    success: false,
+    message: 'Внутренняя ошибка сервера',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
+
+// Обработка несуществующих маршрутов
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Маршрут не найден'
+  });
+});
+
+// Инициализация базы данных при первом запуске
+const initDb = async () => {
+  if (process.env.INIT_DB === 'true') {
+    try {
+      const initDbScript = require('./scripts/initDb');
+      await initDbScript.default();
+      console.log('База данных успешно инициализирована');
+    } catch (error) {
+      console.error('Ошибка при инициализации базы данных:', error);
+    }
+  }
+};
+
+// Подключение к MongoDB и запуск сервера
 mongoose.connect(MONGODB_URI)
-  .then(() => {
-    console.log('Connected to MongoDB');
+  .then(async () => {
+    console.log('Подключение к MongoDB установлено');
+    
+    // Инициализация базы данных, если нужно
+    await initDb();
     
     // Запуск сервера
-    const server = app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-    
-    // Обработка завершения работы
-    process.on('SIGTERM', () => {
-      console.log('SIGTERM received, shutting down gracefully');
-      server.close(() => {
-        console.log('Process terminated');
-        mongoose.connection.close().then(() => {
-          process.exit(0);
-        });
-      });
+    app.listen(PORT, () => {
+      console.log(`Сервер запущен на порту ${PORT}`);
     });
   })
-  .catch(err => {
-    console.error('MongoDB connection error:', err);
+  .catch((error) => {
+    console.error('Ошибка подключения к MongoDB:', error);
     process.exit(1);
   });
 
-// Обработка необработанных исключений и отклоненных промисов
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
+// Обработка необработанных исключений
+process.on('uncaughtException', (error) => {
+  console.error('Необработанное исключение:', error);
+  process.exit(1);
 });
 
+// Обработка необработанных отклонений промисов
 process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  console.error('Необработанное отклонение промиса:', promise, 'причина:', reason);
 });
