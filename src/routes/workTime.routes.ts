@@ -6,12 +6,12 @@ import WorkTime, { IWorkTime } from '../models/workTime.model';
 import User from '../models/user.model';
 import { auth, adminOnly } from '../middleware/auth.middleware';
 
-interface AuthRequest extends Request {
-  userId: string;
-  userRole: string;
-}
-
 const router = Router();
+
+// Сравнение userId с ObjectId
+function compareIds(id1: string | Types.ObjectId, id2: string | Types.ObjectId): boolean {
+  return id1.toString() === id2.toString();
+}
 
 // Получение записей учета рабочего времени с возможностью фильтрации
 router.get('/', auth, async (req: Request, res: Response) => {
@@ -94,16 +94,16 @@ router.post('/', auth, async (req: Request, res: Response) => {
 router.get('/:id', auth, async (req: Request, res: Response) => {
   try {
     const workTime = await WorkTime.findById(req.params.id)
-      .populate('user', 'username fullName')
-      .populate('order', 'orderNumber articleNumber')
-      .populate('approvedBy', 'username fullName');
+      .populate('user', 'name')
+      .populate('order', 'name number')
+      .populate('approvedBy', 'name');
 
     if (!workTime) {
       return res.status(404).json({ message: 'Запись учета времени не найдена' });
     }
 
     // Проверка прав доступа
-    if (req.userRole !== 'admin' && workTime.user.toString() !== req.userId) {
+    if (req.userRole !== 'admin' && !compareIds(workTime.user, req.userId)) {
       return res.status(403).json({ message: 'Доступ запрещен' });
     }
 
@@ -123,8 +123,8 @@ router.put('/:id', auth, async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Запись учета рабочего времени не найдена' });
     }
 
-    // Проверка прав: только владелец или админ может обновлять
-    if (req.userRole !== 'admin' && workTime.user.toString() !== req.userId) {
+    // Проверка прав доступа
+    if (req.userRole !== 'admin' && !compareIds(workTime.user, req.userId)) {
       return res.status(403).json({ message: 'Доступ запрещен' });
     }
 
@@ -164,8 +164,8 @@ router.delete('/:id', auth, async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Запись учета рабочего времени не найдена' });
     }
 
-    // Проверка прав: только владелец или админ может удалять
-    if (req.userRole !== 'admin' && workTime.user.toString() !== req.userId) {
+    // Проверка прав доступа
+    if (req.userRole !== 'admin' && !compareIds(workTime.user, req.userId)) {
       return res.status(403).json({ message: 'Доступ запрещен' });
     }
 
