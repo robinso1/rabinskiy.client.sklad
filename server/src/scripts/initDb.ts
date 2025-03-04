@@ -20,7 +20,7 @@ async function initDb() {
   try {
     // Подключение к MongoDB
     await mongoose.connect(MONGODB_URI);
-    console.log('Подключение к MongoDB установлено');
+    console.log('Connected to MongoDB');
 
     // Очистка коллекций
     await User.deleteMany({});
@@ -32,52 +32,34 @@ async function initDb() {
 
     console.log('Существующие данные удалены');
 
-    // Создание пользователей
-    const adminPassword = await bcrypt.hash('password', 10);
-    const workerPassword = await bcrypt.hash('password', 10);
-
-    // Создаем пользователей без сохранения
-    const adminData = {
+    // Создаем администратора по умолчанию
+    const admin = new User({
       username: 'admin',
-      password: adminPassword,
+      password: 'admin123', // Будет захешировано автоматически
       fullName: 'Администратор',
       role: 'admin',
-      hourlyRate: 300
-    };
+      active: true
+    });
+    await admin.save();
+    console.log('Admin user created');
 
-    const workerData = {
-      username: 'worker1',
-      password: workerPassword,
-      fullName: 'Работник 1',
-      role: 'worker',
-      hourlyRate: 200
-    };
+    // Создаем базовые операции
+    const operations = [];
+    const basicOperations = [
+      { name: 'Резка', defaultRate: 100 },
+      { name: 'Сборка', defaultRate: 150 },
+      { name: 'Покраска', defaultRate: 120 },
+      { name: 'Упаковка', defaultRate: 80 }
+    ];
 
-    // Создаем пользователей напрямую
-    const admin = await User.create(adminData);
-    const worker = await User.create(workerData);
-
-    // Проверяем, что пароли установлены правильно
-    const adminCheck = await User.findOne({ username: 'admin' });
-    const workerCheck = await User.findOne({ username: 'worker1' });
-    
-    if (adminCheck && workerCheck) {
-      const adminPasswordValid = await bcrypt.compare('password', adminCheck.password);
-      const workerPasswordValid = await bcrypt.compare('password', workerCheck.password);
-      
-      console.log('Проверка пароля admin:', adminPasswordValid);
-      console.log('Проверка пароля worker1:', workerPasswordValid);
-      
-      // Если пароли не установлены правильно, обновляем их напрямую
-      if (!adminPasswordValid) {
-        await User.updateOne({ username: 'admin' }, { password: adminPassword });
-        console.log('Пароль admin обновлен напрямую');
-      }
-      
-      if (!workerPasswordValid) {
-        await User.updateOne({ username: 'worker1' }, { password: workerPassword });
-        console.log('Пароль worker1 обновлен напрямую');
-      }
+    for (const op of basicOperations) {
+      const operation = await Operation.create({
+        ...op,
+        active: true,
+        description: `Операция ${op.name.toLowerCase()}`
+      });
+      operations.push(operation);
+      console.log(`Operation ${op.name} created`);
     }
 
     console.log('Пользователи созданы');
@@ -105,21 +87,6 @@ async function initDb() {
 
     console.log('Материалы созданы');
 
-    // Создание операций
-    const operation1 = await Operation.create({
-      name: 'Операция 1',
-      description: 'Описание операции 1',
-      defaultRate: 100
-    });
-
-    const operation2 = await Operation.create({
-      name: 'Операция 2',
-      description: 'Описание операции 2',
-      defaultRate: 150
-    });
-
-    console.log('Операции созданы');
-
     // Создание технологического процесса
     const techProcess = await TechProcess.create({
       name: 'Техпроцесс 1',
@@ -127,13 +94,13 @@ async function initDb() {
       description: 'Описание техпроцесса 1',
       operations: [
         {
-          operationId: operation1._id,
+          operationId: operations[0]._id,
           order: 1,
           quantity: 1,
           optional: false
         },
         {
-          operationId: operation2._id,
+          operationId: operations[1]._id,
           order: 2,
           quantity: 1,
           optional: false
