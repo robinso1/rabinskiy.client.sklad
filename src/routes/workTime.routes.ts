@@ -1,12 +1,12 @@
 // WorkTime routes
 
-import { Router, Request, Response } from 'express';
-import { Types, FilterQuery } from 'mongoose';
+import express from 'express';
+import mongoose, { Types, FilterQuery } from 'mongoose';
 import WorkTime, { IWorkTime } from '../models/workTime.model';
 import User from '../models/user.model';
 import { auth, adminOnly } from '../middleware/auth.middleware';
 
-const router = Router();
+const router = express.Router();
 
 // Сравнение userId с ObjectId
 function compareIds(id1: string | Types.ObjectId, id2: string | Types.ObjectId): boolean {
@@ -14,7 +14,7 @@ function compareIds(id1: string | Types.ObjectId, id2: string | Types.ObjectId):
 }
 
 // Получение записей учета рабочего времени с возможностью фильтрации
-router.get('/', auth, async (req: Request, res: Response) => {
+router.get('/', auth, async (req, res) => {
   try {
     const { userId, orderId, startDate, endDate, approved } = req.query;
     
@@ -58,7 +58,7 @@ router.get('/', auth, async (req: Request, res: Response) => {
 });
 
 // Создание новой записи учета времени
-router.post('/', auth, async (req: Request, res: Response) => {
+router.post('/', auth, async (req, res) => {
   try {
     const { order, date, hours, description } = req.body;
 
@@ -91,7 +91,7 @@ router.post('/', auth, async (req: Request, res: Response) => {
 });
 
 // Получение конкретной записи учета времени
-router.get('/:id', auth, async (req: Request, res: Response) => {
+router.get('/:id', auth, async (req, res) => {
   try {
     const workTime = await WorkTime.findById(req.params.id)
       .populate('user', 'name')
@@ -114,13 +114,13 @@ router.get('/:id', auth, async (req: Request, res: Response) => {
 });
 
 // Обновление записи учета времени
-router.put('/:id', auth, async (req: Request, res: Response) => {
+router.put('/:id', auth, async (req, res) => {
   try {
     const { order, date, hours, description } = req.body;
     const workTime = await WorkTime.findById(req.params.id);
     
     if (!workTime) {
-      return res.status(404).json({ message: 'Запись учета рабочего времени не найдена' });
+      return res.status(404).json({ message: 'Запись учета времени не найдена' });
     }
 
     // Проверка прав доступа
@@ -156,12 +156,12 @@ router.put('/:id', auth, async (req: Request, res: Response) => {
 });
 
 // Удаление записи учета времени
-router.delete('/:id', auth, async (req: Request, res: Response) => {
+router.delete('/:id', auth, async (req, res) => {
   try {
     const workTime = await WorkTime.findById(req.params.id);
     
     if (!workTime) {
-      return res.status(404).json({ message: 'Запись учета рабочего времени не найдена' });
+      return res.status(404).json({ message: 'Запись учета времени не найдена' });
     }
 
     // Проверка прав доступа
@@ -182,7 +182,7 @@ router.delete('/:id', auth, async (req: Request, res: Response) => {
 });
 
 // Утверждение записи учета времени (только для администраторов)
-router.patch('/:id/approve', auth, adminOnly, async (req: Request, res: Response) => {
+router.patch('/:id/approve', auth, adminOnly, async (req, res) => {
   try {
     const workTime = await WorkTime.findById(req.params.id);
     
@@ -208,7 +208,7 @@ router.patch('/:id/approve', auth, adminOnly, async (req: Request, res: Response
 });
 
 // Отмена утверждения записи учета времени (только для администраторов)
-router.patch('/:id/unapprove', auth, adminOnly, async (req: Request, res: Response) => {
+router.patch('/:id/unapprove', auth, adminOnly, async (req, res) => {
   try {
     const workTime = await WorkTime.findById(req.params.id);
     
