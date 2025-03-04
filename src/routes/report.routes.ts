@@ -3,6 +3,12 @@
 import express, { Router } from 'express';
 import { auth, adminOnly } from '../middleware/auth.middleware';
 
+// Функция для корректного сравнения идентификаторов (строка или ObjectId)
+function compareIds(id1: any, id2: any): boolean {
+  if (!id1 || !id2) return false;
+  return id1.toString() === id2.toString();
+}
+
 const router = Router();
 
 // Получить список доступных отчетов
@@ -35,6 +41,16 @@ router.get('/work-time', auth, (req, res) => {
   // Параметры запроса: startDate, endDate, userId
   const startDate = req.query.startDate || new Date(new Date().setDate(new Date().getDate() - 30)).toISOString();
   const endDate = req.query.endDate || new Date().toISOString();
+  const userId = req.query.userId as string;
+  
+  // Проверка прав доступа: админ может видеть отчеты всех пользователей, 
+  // обычный пользователь - только свой
+  if (userId && req.userRole !== 'admin' && !compareIds(userId, req.userId)) {
+    return res.status(403).json({ 
+      success: false,
+      message: 'Доступ запрещен'
+    });
+  }
   
   res.json({
     success: true,
