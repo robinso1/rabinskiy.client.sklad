@@ -45,7 +45,7 @@ INIT_DB=true
 ## Настройка Health Check
 
 В разделе "Health Check" настройте следующие параметры:
-- **Path**: /health
+- **Path**: /api/health
 - **Status**: 200
 
 ## После деплоя
