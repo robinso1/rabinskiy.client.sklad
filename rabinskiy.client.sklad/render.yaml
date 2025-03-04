@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: rabinskiy-sklad-api
+    env: node
+    plan: free
+    buildCommand: cd server && npm install && npm run build
+    startCommand: cd server && node dist/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 24
+      - key: MOYSKLAD_LOGIN
+        value: demo
+      - key: MOYSKLAD_PASSWORD
+        value: demo
+      - key: MOYSKLAD_API_URL
+        value: https://api.moysklad.ru/api/remap/1.2
+      - key: MONGODB_URI
+        value: mongodb+srv://admin:your_password_here@cluster0.zvuor.mongodb.net/rabinskiy-sklad?retryWrites=true&w=majority&authSource=admin&ssl=true
+      - key: RENDER
+        value: true
+    autoDeploy: true 

@@ -5,6 +5,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
+import { connectToDatabase } from './config/database';
 
 // Загрузка переменных окружения
 dotenv.config();
@@ -19,6 +20,7 @@ import techProcessRoutes from './routes/techProcess.routes';
 import workTimeRoutes from './routes/workTime.routes';
 import reportRoutes from './routes/report.routes';
 import moyskladRoutes from './routes/moysklad.routes';
+import healthRoutes from './routes/health.routes';
 
 // Создание экземпляра Express
 const app = express();
@@ -30,6 +32,7 @@ app.use(cors());
 app.use(express.json());
 
 // Маршруты API
+app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/orders', orderRoutes);
@@ -50,17 +53,22 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Подключение к MongoDB
-mongoose.connect(MONGODB_URI)
-  .then(() => {
-    console.log('Connected to MongoDB');
+const startServer = async () => {
+  try {
+    await connectToDatabase(MONGODB_URI);
+    
     // Запуск сервера
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV}`);
     });
-  })
-  .catch((error) => {
-    console.error('MongoDB connection error:', error);
-  });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 // Обработка необработанных исключений
 process.on('uncaughtException', (error) => {
