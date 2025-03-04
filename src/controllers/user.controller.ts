@@ -1,16 +1,15 @@
 // User controller
 
-import { Request, Response } from 'express';
+import express from 'express';
 import User from '../models/user.model';
 
 // Функция для корректного сравнения идентификаторов (строка или ObjectId)
 function compareIds(id1: any, id2: any): boolean {
-  if (!id1 || !id2) return false;
   return id1.toString() === id2.toString();
 }
 
 // Получение списка пользователей
-export const getUsers = async (req: Request, res: Response) => {
+export const getUsers = async (req, res) => {
   try {
     // Параметры запроса
     const role = req.query.role as string;
@@ -60,7 +59,7 @@ export const getUsers = async (req: Request, res: Response) => {
 };
 
 // Получение пользователя по ID
-export const getUserById = async (req: Request, res: Response) => {
+export const getUserById = async (req, res) => {
   try {
     const userId = req.params.id;
     
@@ -100,7 +99,7 @@ export const getUserById = async (req: Request, res: Response) => {
 };
 
 // Обновление пользователя
-export const updateUser = async (req: Request, res: Response) => {
+export const updateUser = async (req, res) => {
   try {
     const userId = req.params.id;
     const { fullName, email, phone, hourlyRate, active, role } = req.body;
@@ -152,7 +151,7 @@ export const updateUser = async (req: Request, res: Response) => {
 };
 
 // Изменение пароля пользователя
-export const changePassword = async (req: Request, res: Response) => {
+export const changePassword = async (req, res) => {
   try {
     const userId = req.params.id;
     const { currentPassword, newPassword } = req.body;
@@ -216,7 +215,7 @@ export const changePassword = async (req: Request, res: Response) => {
 };
 
 // Удаление пользователя
-export const deleteUser = async (req: Request, res: Response) => {
+export const deleteUser = async (req, res) => {
   try {
     const userId = req.params.id;
     

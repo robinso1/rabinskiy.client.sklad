@@ -1,26 +1,31 @@
 // WorkTime routes
 
-import { Router, Request, Response } from 'express';
-import { Types, FilterQuery } from 'mongoose';
+import express from 'express';
+import mongoose from 'mongoose';
 import WorkTime, { IWorkTime } from '../models/workTime.model';
 import User from '../models/user.model';
 import { auth, adminOnly } from '../middleware/auth.middleware';
 
-const router = Router();
+const router = express.Router();
+
+// Сравнение userId с ObjectId
+function compareIds(id1: string | mongoose.Types.ObjectId, id2: string | mongoose.Types.ObjectId): boolean {
+  return id1.toString() === id2.toString();
+}
 
 // Получение записей учета рабочего времени с возможностью фильтрации
-router.get('/', auth, async (req: Request, res: Response) => {
+router.get('/', auth, async (req, res) => {
   try {
     const { userId, orderId, startDate, endDate, approved } = req.query;
     
-    const filter: FilterQuery<IWorkTime> = {};
+    const filter: mongoose.FilterQuery<IWorkTime> = {};
 
     if (userId) {
-      filter.user = new Types.ObjectId(userId as string);
+      filter.user = new mongoose.Types.ObjectId(userId as string);
     }
 
     if (orderId) {
-      filter.order = new Types.ObjectId(orderId as string);
+      filter.order = new mongoose.Types.ObjectId(orderId as string);
     }
 
     if (startDate) {
@@ -36,8 +41,8 @@ router.get('/', auth, async (req: Request, res: Response) => {
     }
 
     // Если пользователь не админ, показываем только его записи
-    if ((req as any).userRole !== 'admin') {
-      filter.user = new Types.ObjectId((req as any).userId);
+    if (req.userRole !== 'admin') {
+      filter.user = new mongoose.Types.ObjectId(req.userId as string);
     }
 
     const workTimeRecords = await WorkTime.find(filter)
@@ -53,19 +58,19 @@ router.get('/', auth, async (req: Request, res: Response) => {
 });
 
 // Создание новой записи учета времени
-router.post('/', auth, async (req: Request, res: Response) => {
+router.post('/', auth, async (req, res) => {
   try {
     const { order, date, hours, description } = req.body;
 
     // Получение пользователя для определения почасовой ставки
-    const user = await User.findById((req as any).userId);
+    const user = await User.findById(req.userId);
     if (!user) {
       return res.status(404).json({ message: 'Пользователь не найден' });
     }
 
     const workTime = new WorkTime({
-      user: new Types.ObjectId((req as any).userId),
-      order: order ? new Types.ObjectId(order) : undefined,
+      user: new mongoose.Types.ObjectId(req.userId as string),
+      order: order ? new mongoose.Types.ObjectId(order) : undefined,
       date,
       hours,
       hourlyRate: user.hourlyRate || 0,
@@ -86,7 +91,7 @@ router.post('/', auth, async (req: Request, res: Response) => {
 });
 
 // Получение конкретной записи учета времени
-router.get('/:id', auth, async (req: Request, res: Response) => {
+router.get('/:id', auth, async (req, res) => {
   try {
     const workTime = await WorkTime.findById(req.params.id)
       .populate('user', 'username fullName')
@@ -98,7 +103,7 @@ router.get('/:id', auth, async (req: Request, res: Response) => {
     }
 
     // Проверка прав доступа
-    if ((req as any).userRole !== 'admin' && workTime.user.toString() !== (req as any).userId) {
+    if (req.userRole !== 'admin' && !compareIds(workTime.user._id, req.userId)) {
       return res.status(403).json({ message: 'Доступ запрещен' });
     }
 
@@ -109,27 +114,27 @@ router.get('/:id', auth, async (req: Request, res: Response) => {
 });
 
 // Обновление записи учета времени
-router.put('/:id', auth, async (req: Request, res: Response) => {
+router.put('/:id', auth, async (req, res) => {
   try {
     const { order, date, hours, description } = req.body;
     const workTime = await WorkTime.findById(req.params.id);
     
     if (!workTime) {
-      return res.status(404).json({ message: 'Запись учета рабочего времени не найдена' });
+      return res.status(404).json({ message: 'Запись учета времени не найдена' });
     }
 
-    // Проверка прав: только владелец или админ может обновлять
-    if ((req as any).userRole !== 'admin' && workTime.user.toString() !== (req as any).userId) {
+    // Проверка прав доступа
+    if (req.userRole !== 'admin' && !compareIds(workTime.user, req.userId)) {
       return res.status(403).json({ message: 'Доступ запрещен' });
     }
 
     // Если запись уже утверждена, только админ может её изменять
-    if (workTime.approved && (req as any).userRole !== 'admin') {
+    if (workTime.approved && req.userRole !== 'admin') {
       return res.status(403).json({ message: 'Нельзя изменять утвержденную запись' });
     }
 
     const updateData: Partial<IWorkTime> = {
-      order: order ? new Types.ObjectId(order) : workTime.order,
+      order: order ? new mongoose.Types.ObjectId(order) : workTime.order,
       date: date || workTime.date,
       hours: hours || workTime.hours,
       description: description || workTime.description
@@ -151,21 +156,21 @@ router.put('/:id', auth, async (req: Request, res: Response) => {
 });
 
 // Удаление записи учета времени
-router.delete('/:id', auth, async (req: Request, res: Response) => {
+router.delete('/:id', auth, async (req, res) => {
   try {
     const workTime = await WorkTime.findById(req.params.id);
     
     if (!workTime) {
-      return res.status(404).json({ message: 'Запись учета рабочего времени не найдена' });
+      return res.status(404).json({ message: 'Запись учета времени не найдена' });
     }
 
-    // Проверка прав: только владелец или админ может удалять
-    if ((req as any).userRole !== 'admin' && workTime.user.toString() !== (req as any).userId) {
+    // Проверка прав доступа
+    if (req.userRole !== 'admin' && !compareIds(workTime.user, req.userId)) {
       return res.status(403).json({ message: 'Доступ запрещен' });
     }
 
     // Если запись уже утверждена, только админ может её удалять
-    if (workTime.approved && (req as any).userRole !== 'admin') {
+    if (workTime.approved && req.userRole !== 'admin') {
       return res.status(403).json({ message: 'Нельзя удалять утвержденную запись' });
     }
 
@@ -177,16 +182,16 @@ router.delete('/:id', auth, async (req: Request, res: Response) => {
 });
 
 // Утверждение записи учета времени (только для администраторов)
-router.patch('/:id/approve', auth, adminOnly, async (req: Request, res: Response) => {
+router.patch('/:id/approve', auth, adminOnly, async (req, res) => {
   try {
     const workTime = await WorkTime.findById(req.params.id);
     
     if (!workTime) {
-      return res.status(404).json({ message: 'Запись учета рабочего времени не найдена' });
+      return res.status(404).json({ message: 'Запись учета времени не найдена' });
     }
 
     workTime.approved = true;
-    workTime.approvedBy = new Types.ObjectId((req as any).userId);
+    workTime.approvedBy = new mongoose.Types.ObjectId(req.userId as string);
     workTime.approvedAt = new Date();
 
     await workTime.save();
@@ -203,12 +208,12 @@ router.patch('/:id/approve', auth, adminOnly, async (req: Request, res: Response
 });
 
 // Отмена утверждения записи учета времени (только для администраторов)
-router.patch('/:id/unapprove', auth, adminOnly, async (req: Request, res: Response) => {
+router.patch('/:id/unapprove', auth, adminOnly, async (req, res) => {
   try {
     const workTime = await WorkTime.findById(req.params.id);
     
     if (!workTime) {
-      return res.status(404).json({ message: 'Запись учета рабочего времени не найдена' });
+      return res.status(404).json({ message: 'Запись учета времени не найдена' });
     }
 
     workTime.approved = false;
