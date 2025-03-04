@@ -38,7 +38,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Маршруты API
-app.use('/health', healthRoutes);
+app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/materials', materialRoutes);
