@@ -9,7 +9,7 @@ import { auth, adminOnly } from '../middleware/auth.middleware';
 const router = express.Router();
 
 // Сравнение userId с ObjectId
-function compareIds(id1: string | mongoose.Types.ObjectId, id2: string | mongoose.Types.ObjectId): boolean {
+function compareIds(id1: any, id2: any): boolean {
   return id1.toString() === id2.toString();
 }
 
