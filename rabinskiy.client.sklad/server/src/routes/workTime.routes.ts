@@ -1,12 +1,18 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
 import WorkTime from '../models/workTime.model';
 import User from '../models/user.model';
 import { auth, adminOnly } from '../middleware/auth.middleware';
 
 const router = express.Router();
 
+// Функция для корректного сравнения ID
+const compareIds = (id1: any, id2: any): boolean => {
+  if (!id1 || !id2) return false;
+  return String(id1) === String(id2);
+};
+
 // Получение записей учета рабочего времени с возможностью фильтрации
-router.get('/', auth, async (req: Request, res: Response) => {
+router.get('/', auth, async (req, res) => {
   try {
     const { userId, orderId, startDate, endDate, approved } = req.query;
     
@@ -53,7 +59,7 @@ router.get('/', auth, async (req: Request, res: Response) => {
 });
 
 // Создание новой записи учета рабочего времени
-router.post('/', auth, async (req: Request, res: Response) => {
+router.post('/', auth, async (req, res) => {
   try {
     const { order, date, hours, description } = req.body;
 
@@ -94,7 +100,7 @@ router.post('/', auth, async (req: Request, res: Response) => {
 });
 
 // Получение информации о конкретной записи учета рабочего времени
-router.get('/:id', auth, async (req: Request, res: Response) => {
+router.get('/:id', auth, async (req, res) => {
   try {
     const workTime = await WorkTime.findById(req.params.id)
       .populate('user', 'username fullName')
@@ -107,8 +113,8 @@ router.get('/:id', auth, async (req: Request, res: Response) => {
 
     // Проверка прав доступа: админ может видеть все записи, 
     // обычный пользователь - только свои
-    if (req.userRole !== 'admin' && workTime.user._id.toString() !== req.userId) {
-      return res.status(403).json({ message: 'Доступ запрещен' });
+    if (req.userRole !== 'admin' && !compareIds(workTime.user._id, req.userId)) {
+      return res.status(403).json({ message: 'У вас нет прав для просмотра этой записи' });
     }
 
     res.json(workTime);
@@ -119,7 +125,7 @@ router.get('/:id', auth, async (req: Request, res: Response) => {
 });
 
 // Обновление записи учета рабочего времени
-router.put('/:id', auth, async (req: Request, res: Response) => {
+router.put('/:id', auth, async (req, res) => {
   try {
     const { order, date, hours, description } = req.body;
     const workTime = await WorkTime.findById(req.params.id);
@@ -129,8 +135,8 @@ router.put('/:id', auth, async (req: Request, res: Response) => {
     }
 
     // Проверка прав: только владелец или админ может обновлять
-    if (req.userRole !== 'admin' && workTime.user.toString() !== req.userId) {
-      return res.status(403).json({ message: 'Доступ запрещен' });
+    if (req.userRole !== 'admin' && !compareIds(workTime.user, req.userId)) {
+      return res.status(403).json({ message: 'У вас нет прав для редактирования этой записи' });
     }
 
     // Проверка, что запись не утверждена (утвержденные записи нельзя изменять)
@@ -162,7 +168,7 @@ router.put('/:id', auth, async (req: Request, res: Response) => {
 });
 
 // Удаление записи учета рабочего времени
-router.delete('/:id', auth, async (req: Request, res: Response) => {
+router.delete('/:id', auth, async (req, res) => {
   try {
     const workTime = await WorkTime.findById(req.params.id);
     
@@ -171,8 +177,8 @@ router.delete('/:id', auth, async (req: Request, res: Response) => {
     }
 
     // Проверка прав: только владелец или админ может удалять
-    if (req.userRole !== 'admin' && workTime.user.toString() !== req.userId) {
-      return res.status(403).json({ message: 'Доступ запрещен' });
+    if (req.userRole !== 'admin' && !compareIds(workTime.user, req.userId)) {
+      return res.status(403).json({ message: 'У вас нет прав для удаления этой записи' });
     }
 
     // Проверка, что запись не утверждена (утвержденные записи нельзя удалять)
@@ -190,7 +196,7 @@ router.delete('/:id', auth, async (req: Request, res: Response) => {
 });
 
 // Утверждение записи учета рабочего времени (только для админов)
-router.patch('/:id/approve', auth, adminOnly, async (req: Request, res: Response) => {
+router.patch('/:id/approve', auth, adminOnly, async (req, res) => {
   try {
     const workTime = await WorkTime.findById(req.params.id);
     
@@ -218,7 +224,7 @@ router.patch('/:id/approve', auth, adminOnly, async (req: Request, res: Response
 });
 
 // Отмена утверждения записи учета рабочего времени (только для админов)
-router.patch('/:id/unapprove', auth, adminOnly, async (req: Request, res: Response) => {
+router.patch('/:id/unapprove', auth, adminOnly, async (req, res) => {
   try {
     const workTime = await WorkTime.findById(req.params.id);
     
