@@ -1,0 +1,72 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: server/package-lock.json
+    
+    - name: Install dependencies
+      working-directory: ./server
+      run: npm ci
+    
+    - name: Build
+      working-directory: ./server
+      run: npm run build
+    
+    - name: Run TypeScript check
+      working-directory: ./server
+      run: npx tsc --noEmit
+    
+    - name: Cache build artifacts
+      uses: actions/cache@v3
+      with:
+        path: |
+          server/dist
+          server/node_modules
+        key: ${{ runner.os }}-build-${{ github.sha }}
+        restore-keys: |
+          ${{ runner.os }}-build-
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Restore build artifacts
+      uses: actions/cache@v3
+      with:
+        path: |
+          server/dist
+          server/node_modules
+        key: ${{ runner.os }}-build-${{ github.sha }}
+    
+    - name: Deploy to Render
+      run: |
+        curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+      
+    - name: Notify deployment
+      run: |
+        echo "Deployment triggered on Render.com"
+        echo "Check deployment status at https://dashboard.render.com/" 
