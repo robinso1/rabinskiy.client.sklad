@@ -3,6 +3,12 @@
 import { Request, Response } from 'express';
 import User from '../models/user.model';
 
+// Функция для корректного сравнения идентификаторов (строка или ObjectId)
+function compareIds(id1: any, id2: any): boolean {
+  if (!id1 || !id2) return false;
+  return id1.toString() === id2.toString();
+}
+
 // Получение списка пользователей
 export const getUsers = async (req: Request, res: Response) => {
   try {
@@ -57,6 +63,15 @@ export const getUsers = async (req: Request, res: Response) => {
 export const getUserById = async (req: Request, res: Response) => {
   try {
     const userId = req.params.id;
+    
+    // Проверка прав доступа: только администратор или сам пользователь может получать информацию
+    if (req.userRole !== 'admin' && !compareIds(req.userId, userId)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Доступ запрещен',
+        errors: ['Доступ запрещен']
+      });
+    }
     
     // Получение пользователя из базы данных
     const user = await User.findById(userId).select('-password');
@@ -148,6 +163,15 @@ export const changePassword = async (req: Request, res: Response) => {
         success: false,
         message: 'Необходимо указать текущий и новый пароль',
         errors: ['Необходимо указать текущий и новый пароль']
+      });
+    }
+    
+    // Проверка прав доступа: только администратор или сам пользователь может менять пароль
+    if (req.userRole !== 'admin' && !compareIds(req.userId, userId)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Доступ запрещен',
+        errors: ['Доступ запрещен']
       });
     }
     
